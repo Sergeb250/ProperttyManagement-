@@ -2,9 +2,11 @@ package com.btech.propertymgt.demo.services;
 
 import com.btech.propertymgt.demo.models.Property;
 import com.btech.propertymgt.demo.models.PropertyImage;
+import com.btech.propertymgt.demo.models.PropertyVideo;
 import com.btech.propertymgt.demo.models.Room;
 import com.btech.propertymgt.demo.models.RoomImage;
 import com.btech.propertymgt.demo.repositories.PropertyImageRepository;
+import com.btech.propertymgt.demo.repositories.PropertyVideoRepository;
 import com.btech.propertymgt.demo.repositories.RoomImageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class FileStorageService {
 
     private final PropertyImageRepository propertyImageRepository;
+    private final PropertyVideoRepository propertyVideoRepository;
     private final RoomImageRepository roomImageRepository;
     private final S3Client s3Client;
 
@@ -69,6 +72,31 @@ public class FileStorageService {
         image.setImageUrl(SUPABASE_PUBLIC_URL_PREFIX + bucketName + "/" + objectKey);
 
         return roomImageRepository.save(image);
+    }
+
+    public PropertyVideo uploadPropertyVideo(Property property, MultipartFile file, String title, String platform,
+            String externalEmbedId) {
+        PropertyVideo video = new PropertyVideo();
+        video.setProperty(property);
+        video.setTitle(title);
+        video.setPlatform(platform);
+        video.setExternalEmbedId(externalEmbedId);
+
+        if (file != null && !file.isEmpty()) {
+            String fileName = generateFileName(file.getOriginalFilename());
+            String objectKey = "properties/" + property.getPropertyCode() + "/videos/" + fileName;
+
+            // Upload physical video file
+            uploadToS3(file, objectKey);
+
+            video.setFileName(file.getOriginalFilename());
+            video.setContentType(file.getContentType());
+            video.setVideoUrl(SUPABASE_PUBLIC_URL_PREFIX + bucketName + "/" + objectKey);
+        } else if (externalEmbedId != null) {
+            video.setVideoUrl("EXTERNAL_LINK"); // handled by frontend embed component usually
+        }
+
+        return propertyVideoRepository.save(video);
     }
 
     private void uploadToS3(MultipartFile file, String objectKey) {

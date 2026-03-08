@@ -99,6 +99,9 @@ public class Property {
     private List<PropertyImage> images;
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
+    private List<PropertyVideo> videos;
+
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
     private List<Tenancy> tenancies;
 
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })

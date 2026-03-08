@@ -10,6 +10,7 @@ import java.util.List;
 public class PropertySetupRequest {
     private PropertyCreatePart property;
     private List<PropertyImageMetaRequest> propertyImagesMeta = new ArrayList<>();
+    private List<PropertyVideoMetaRequest> propertyVideosMeta = new ArrayList<>();
     private List<RoomCreatePart> rooms = new ArrayList<>();
 
     @Data
@@ -40,6 +41,14 @@ public class PropertySetupRequest {
         private String category;
         private Boolean coverImage;
         private Integer displayOrder;
+    }
+
+    @Data
+    public static class PropertyVideoMetaRequest {
+        private String fileKey;
+        private String title;
+        private String platform;
+        private String externalEmbedId;
     }
 
     @Data

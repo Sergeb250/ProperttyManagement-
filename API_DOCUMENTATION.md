@@ -58,6 +58,10 @@ Creates the Property, its constituent Rooms, and physically uploads all S3 media
   "propertyImagesMeta": [
     { "fileKey": "cover_image", "category": "EXTERIOR", "coverImage": true }
   ],
+  "propertyVideosMeta": [
+    { "fileKey": "tour_video_1", "title": "Main Property Walkthrough", "platform": "S3_UPLOAD" },
+    { "title": "Drone Footage", "platform": "YOUTUBE", "externalEmbedId": "dQw4w9WgXcQ" }
+  ],
   "rooms": [
     {
       "roomCode": "RM-01",

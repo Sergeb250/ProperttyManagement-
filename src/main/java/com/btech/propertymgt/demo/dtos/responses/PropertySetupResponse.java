@@ -13,6 +13,7 @@ public class PropertySetupResponse {
     private String status;
     private String listingStatus;
     private int propertyImagesCount;
+    private int propertyVideosCount;
     private int roomsCount;
     private int roomImagesCount;
     private boolean completedSetup;

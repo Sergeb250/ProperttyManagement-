@@ -81,6 +81,25 @@ public class PropertySetupService {
             }
         }
 
+        int propVideosCount = 0;
+        // 4b. Map Property Videos
+        if (request.getPropertyVideosMeta() != null) {
+            for (PropertySetupRequest.PropertyVideoMetaRequest meta : request.getPropertyVideosMeta()) {
+                MultipartFile file = null;
+                if (meta.getFileKey() != null) {
+                    file = multipartRequest.getFile(meta.getFileKey());
+                }
+
+                if ((file != null && !file.isEmpty()) || meta.getExternalEmbedId() != null) {
+                    fileStorageService.uploadPropertyVideo(property, file, meta.getTitle(), meta.getPlatform(),
+                            meta.getExternalEmbedId());
+                    propVideosCount++;
+                } else {
+                    warnings.add("Missing uploaded video file or embed ID for video key: " + meta.getFileKey());
+                }
+            }
+        }
+
         int roomsCount = 0;
         int roomImagesCount = 0;
         // 5. Process Rooms
@@ -165,6 +184,7 @@ public class PropertySetupService {
                 .status(property.getStatus().name())
                 .listingStatus(property.getListingStatus().name())
                 .propertyImagesCount(propImagesCount)
+                .propertyVideosCount(propVideosCount)
                 .roomsCount(roomsCount)
                 .roomImagesCount(roomImagesCount)
                 .completedSetup(property.getCompletedSetup())
