@@ -7,37 +7,94 @@ import com.btech.propertymgt.demo.models.RoomImage;
 import com.btech.propertymgt.demo.repositories.PropertyImageRepository;
 import com.btech.propertymgt.demo.repositories.RoomImageRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
+import java.util.UUID;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileStorageService {
 
     private final PropertyImageRepository propertyImageRepository;
     private final RoomImageRepository roomImageRepository;
+    private final S3Client s3Client;
 
-    // In a real application, replace this mock with S3/GCP/Blob upload logics.
-    public PropertyImage uploadPropertyImage(Property property, String fileName, String contentType, String category,
-            boolean isCover) {
+    @Value("${supabase.s3.bucket}")
+    private String bucketName;
+
+    // Use the Supabase instance URL prefix for public objects
+    private final String SUPABASE_PUBLIC_URL_PREFIX = "https://yojaqlqoeachnxyoryas.supabase.co/storage/v1/object/public/";
+
+    public PropertyImage uploadPropertyImage(Property property, MultipartFile file, String category, boolean isCover) {
+        String fileName = generateFileName(file.getOriginalFilename());
+        String objectKey = "properties/" + property.getPropertyCode() + "/" + fileName;
+
+        // Upload physical file
+        uploadToS3(file, objectKey);
+
+        // Save metadata
         PropertyImage image = new PropertyImage();
         image.setProperty(property);
-        image.setFileName(fileName);
-        image.setContentType(contentType);
+        image.setFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
         image.setCategory(category);
         image.setCoverImage(isCover);
-        image.setImageUrl("https://propertymgt.example.com/uploads/" + System.currentTimeMillis() + "_" + fileName);
+        image.setImageUrl(SUPABASE_PUBLIC_URL_PREFIX + bucketName + "/" + objectKey);
+
         return propertyImageRepository.save(image);
     }
 
-    public RoomImage uploadRoomImage(Room room, String fileName, String contentType, String title, boolean isCover) {
+    public RoomImage uploadRoomImage(Room room, MultipartFile file, String title, boolean isCover) {
+        String fileName = generateFileName(file.getOriginalFilename());
+        String objectKey = "rooms/" + room.getRoomCode() + "/" + fileName;
+
+        // Upload physical file
+        uploadToS3(file, objectKey);
+
+        // Save metadata
         RoomImage image = new RoomImage();
         image.setRoom(room);
-        image.setFileName(fileName);
-        image.setContentType(contentType);
+        image.setFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
         image.setTitle(title);
         image.setCoverImage(isCover);
-        image.setImageUrl(
-                "https://propertymgt.example.com/uploads/rooms/" + System.currentTimeMillis() + "_" + fileName);
+        image.setImageUrl(SUPABASE_PUBLIC_URL_PREFIX + bucketName + "/" + objectKey);
+
         return roomImageRepository.save(image);
+    }
+
+    private void uploadToS3(MultipartFile file, String objectKey) {
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .contentType(file.getContentType())
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            log.info("Successfully uploaded file to S3: {}/{}", bucketName, objectKey);
+        } catch (IOException e) {
+            log.error("Failed to read multipart file during S3 upload", e);
+            throw new RuntimeException("Failed to read file for storage upload", e);
+        } catch (Exception e) {
+            log.error("S3 upload failed for key: {}", objectKey, e);
+            throw new RuntimeException("Cloud storage upload failed", e);
+        }
+    }
+
+    private String generateFileName(String originalFilename) {
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        return UUID.randomUUID().toString() + extension;
     }
 }

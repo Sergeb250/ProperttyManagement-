@@ -80,6 +80,18 @@ public class Property {
 
     private Integer viewCount = 0;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RentalMode rentalMode = RentalMode.WHOLE_PROPERTY;
+
+    private Boolean allowVisitRequests = true;
+
+    private Boolean allowRentRequests = true;
+
+    private Boolean completedSetup = false;
+
+    private Boolean requiresRoomSetup = false;
+
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
     private List<Room> rooms;
 
@@ -114,5 +126,9 @@ public class Property {
 
     public enum ListingStatus {
         DRAFT, PUBLISHED, UNPUBLISHED, ARCHIVED
+    }
+
+    public enum RentalMode {
+        WHOLE_PROPERTY, BY_ROOMS
     }
 }
